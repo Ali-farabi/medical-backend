@@ -1,10 +1,9 @@
-const pool = require("../config/database");
+const pool = require("../config/db");
 
 const createTables = async () => {
   try {
     console.log("Creating database tables...");
 
-    // Create users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -17,12 +16,10 @@ const createTables = async () => {
       )
     `);
 
-    // Create index
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
     `);
 
-    // Create appointments table (if needed)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS appointments (
         id SERIAL PRIMARY KEY,
