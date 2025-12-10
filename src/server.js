@@ -2,7 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
-const { createTables } = require("./database/schema"); // Add this
+const { createTables } = require("./database/schema");
+const { addAvatarColumn } = require("./database/migrate");
 
 const app = express();
 
@@ -65,11 +66,10 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 8000;
 const HOST = "0.0.0.0";
 
-// Initialize database and start server
 const startServer = async () => {
   try {
-    // Create tables before starting server
     await createTables();
+    await addAvatarColumn(); // Add this line
 
     app.listen(PORT, HOST, () => {
       console.log(`✓ Server is running on port ${PORT}`);
