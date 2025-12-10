@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
+const { createTables } = require("./database/schema"); // Add this
 
 const app = express();
 
@@ -52,7 +53,6 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -65,10 +65,23 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 8000;
 const HOST = "0.0.0.0";
 
-app.listen(PORT, HOST, () => {
-  console.log(` Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-});
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Create tables before starting server
+    await createTables();
+
+    app.listen(PORT, HOST, () => {
+      console.log(`✓ Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;
