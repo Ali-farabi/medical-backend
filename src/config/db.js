@@ -20,13 +20,4 @@ pool.on("error", (err) => {
   process.exit(-1);
 });
 
-// УБРАТЬ ЭТИ СТРОКИ - они вызывают проблему при импорте
-// pool.query("SELECT NOW()", (err, res) => {
-//   if (err) {
-//     console.error("Database connection error:", err);
-//   } else {
-//     console.log("Database time:", res.rows[0].now);
-//   }
-// });
-
 module.exports = pool;
