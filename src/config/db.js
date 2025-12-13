@@ -1,6 +1,6 @@
 const { Pool } = require("pg");
 
-const isRender = process.env.DB_HOST.includes("render.com");
+const isRender = process.env.DB_HOST?.includes("render.com") || false;
 
 const pool = new Pool({
   host: process.env.DB_HOST,
