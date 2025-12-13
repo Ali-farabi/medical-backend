@@ -4,6 +4,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const { createTables } = require("./database/schema");
 const { addAvatarColumn } = require("./database/migrate");
+const { addProfileFields } = require("./database/addProfileFields");
 
 const app = express();
 
@@ -70,7 +71,8 @@ const HOST = "0.0.0.0";
 const startServer = async () => {
   try {
     await createTables();
-    await addAvatarColumn(); // Add this line
+    await addAvatarColumn();
+    await addProfileFields();
 
     app.listen(PORT, HOST, () => {
       console.log(`✓ Server is running on port ${PORT}`);
