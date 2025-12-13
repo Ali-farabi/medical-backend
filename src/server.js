@@ -10,7 +10,7 @@ const app = express();
 const allowedOrigins = [
   "https://medical-project-orpin.vercel.app",
   "http://localhost:5173",
-  "https://food-recipes-eight-ivory.vercel.app/",
+  "https://food-recipes-eight-ivory.vercel.app",
 ];
 
 app.use(
