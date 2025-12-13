@@ -12,6 +12,7 @@ const allowedOrigins = [
   "https://medical-project-orpin.vercel.app",
   "http://localhost:5173",
   "https://food-recipes-eight-ivory.vercel.app",
+  "https://markett-self.vercel.app",
 ];
 
 app.use(
