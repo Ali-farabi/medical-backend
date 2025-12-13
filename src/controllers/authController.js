@@ -137,8 +137,67 @@ const getMe = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Ошибка валидации",
+        errors: errors.array(),
+      });
+    }
+
+    const userId = req.user.id;
+    const { name, email, phone, dateOfBirth, address, avatar } = req.body;
+
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Пользователь не найден",
+      });
+    }
+
+    if (email && email !== existingUser.email) {
+      const emailExists = await User.findByEmail(email);
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Пользователь с таким email уже существует",
+        });
+      }
+    }
+
+    const updatedUser = await User.update(userId, {
+      name,
+      email,
+      phone,
+      date_of_birth: dateOfBirth,
+      address,
+      avatar,
+    });
+
+    const { password, ...userWithoutPassword } = updatedUser;
+
+    res.status(200).json({
+      success: true,
+      message: "Профиль успешно обновлен",
+      data: userWithoutPassword,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при обновлении профиля",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
+  updateProfile,
 };

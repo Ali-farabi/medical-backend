@@ -1,52 +1,71 @@
 const pool = require("../config/db");
 
 class User {
+  static async create({ email, password, name, role = "user" }) {
+    const query = `
+      INSERT INTO users (email, password, name, role)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, email, name, role, created_at
+    `;
+    const values = [email, password, name, role];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
+
   static async findByEmail(email) {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const query = "SELECT * FROM users WHERE email = $1";
+    const result = await pool.query(query, [email]);
     return result.rows[0];
   }
 
   static async findById(id) {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    const query = "SELECT * FROM users WHERE id = $1";
+    const result = await pool.query(query, [id]);
     return result.rows[0];
   }
 
-  static async create({ email, password, name, role = "user", avatar = null }) {
-    const result = await pool.query(
-      `INSERT INTO users (email, password, name, role, avatar) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING *`,
-      [email, password, name, role, avatar]
-    );
-    return result.rows[0];
-  }
+  static async update(id, userData) {
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
 
-  static async getAll() {
-    const result = await pool.query(
-      "SELECT id, email, name, role, avatar, created_at FROM users ORDER BY created_at DESC"
-    );
-    return result.rows;
-  }
+    if (userData.name !== undefined) {
+      fields.push(`name = $${paramCount++}`);
+      values.push(userData.name);
+    }
+    if (userData.email !== undefined) {
+      fields.push(`email = $${paramCount++}`);
+      values.push(userData.email);
+    }
+    if (userData.phone !== undefined) {
+      fields.push(`phone = $${paramCount++}`);
+      values.push(userData.phone);
+    }
+    if (userData.date_of_birth !== undefined) {
+      fields.push(`date_of_birth = $${paramCount++}`);
+      values.push(userData.date_of_birth);
+    }
+    if (userData.address !== undefined) {
+      fields.push(`address = $${paramCount++}`);
+      values.push(userData.address);
+    }
+    if (userData.avatar !== undefined) {
+      fields.push(`avatar = $${paramCount++}`);
+      values.push(userData.avatar);
+    }
 
-  static async update(id, { name, avatar }) {
-    const result = await pool.query(
-      `UPDATE users 
-       SET name = COALESCE($2, name), 
-           avatar = COALESCE($3, avatar)
-       WHERE id = $1 
-       RETURNING *`,
-      [id, name, avatar]
-    );
-    return result.rows[0];
-  }
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
 
-  static async delete(id) {
-    const result = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING *",
-      [id]
-    );
+    values.push(id);
+
+    const query = `
+      UPDATE users 
+      SET ${fields.join(", ")}
+      WHERE id = $${paramCount}
+      RETURNING id, email, name, role, phone, date_of_birth, address, avatar, created_at, updated_at
+    `;
+
+    const result = await pool.query(query, values);
     return result.rows[0];
   }
 }
