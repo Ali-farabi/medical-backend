@@ -71,6 +71,10 @@ const HOST = "0.0.0.0";
 
 const startServer = async () => {
   try {
+    const pool = require("./config/db");
+    await pool.query("SELECT NOW()");
+    console.log("✓ Database connection successful");
+
     await createTables();
     await addAvatarColumn();
     await addProfileFields();
