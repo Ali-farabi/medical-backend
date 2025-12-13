@@ -29,10 +29,6 @@ const updateProfileValidation = [
     .optional()
     .isMobilePhone()
     .withMessage("Некорректный номер телефона"),
-  body("dateOfBirth")
-    .optional()
-    .isISO8601()
-    .withMessage("Некорректная дата рождения"),
 ];
 
 router.post("/register", registerValidation, register);

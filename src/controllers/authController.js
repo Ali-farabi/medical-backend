@@ -149,7 +149,7 @@ const updateProfile = async (req, res) => {
     }
 
     const userId = req.user.id;
-    const { name, email, phone, dateOfBirth, address, avatar } = req.body;
+    const { name, email, phone, address, avatar } = req.body;
 
     const existingUser = await User.findById(userId);
     if (!existingUser) {
@@ -173,7 +173,7 @@ const updateProfile = async (req, res) => {
       name,
       email,
       phone,
-      date_of_birth: dateOfBirth,
+
       address,
       avatar,
     });

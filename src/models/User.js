@@ -41,10 +41,7 @@ class User {
       fields.push(`phone = $${paramCount++}`);
       values.push(userData.phone);
     }
-    if (userData.date_of_birth !== undefined) {
-      fields.push(`date_of_birth = $${paramCount++}`);
-      values.push(userData.date_of_birth);
-    }
+
     if (userData.address !== undefined) {
       fields.push(`address = $${paramCount++}`);
       values.push(userData.address);
@@ -62,7 +59,7 @@ class User {
       UPDATE users 
       SET ${fields.join(", ")}
       WHERE id = $${paramCount}
-      RETURNING id, email, name, role, phone, date_of_birth, address, avatar, created_at, updated_at
+      RETURNING id, email, name, role, phone,  address, avatar, created_at, updated_at
     `;
 
     const result = await pool.query(query, values);
