@@ -1,11 +1,12 @@
 require("dotenv").config();
+import doctorRoutes from "./routes/doctorRoutes.js";
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const { createTables } = require("./database/schema");
 const { addAvatarColumn } = require("./database/migrate");
 const { addProfileFields } = require("./database/addProfileFields");
-
+app.use("/api/doctors", doctorRoutes);
 const app = express();
 
 const allowedOrigins = [
