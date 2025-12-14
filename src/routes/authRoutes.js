@@ -1,13 +1,15 @@
-const express = require("express");
-const router = express.Router();
-const { body } = require("express-validator");
-const {
+cat > (src / routes / authRoutes.js) << "EOF";
+import express from "express";
+import { body } from "express-validator";
+import {
   register,
   login,
   getMe,
   updateProfile,
-} = require("../controllers/authController");
-const { authenticateToken } = require("../middleware/auth");
+} from "../controllers/authController.js";
+import authenticate from "../middleware/authenticate.js";
+
+const router = express.Router();
 
 const registerValidation = [
   body("email").isEmail().withMessage("Некорректный email"),
@@ -33,7 +35,8 @@ const updateProfileValidation = [
 
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
-router.get("/me", authenticateToken, getMe);
-router.put("/me", authenticateToken, updateProfileValidation, updateProfile);
+router.get("/me", authenticate, getMe);
+router.put("/me", authenticate, updateProfileValidation, updateProfile);
 
-module.exports = router;
+export default router;
+EOF;

@@ -1,15 +1,16 @@
-const jwt = require("jsonwebtoken");
-const { validationResult } = require("express-validator");
-const User = require("../models/User");
-const { hashPassword, comparePassword } = require("../utils/hashPassword");
+cat > (src / controllers / authController.js) << "EOF";
+import jwt from "jsonwebtoken";
+import { validationResult } from "express-validator";
+import User from "../models/User.js";
+import { hashPassword, comparePassword } from "../utils/hashPassword.js";
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
+    expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
 
-const register = async (req, res) => {
+export const register = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -60,23 +61,16 @@ const register = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     console.log("========================================");
-    console.log("login ");
+    console.log("login");
     console.log("Request body:", JSON.stringify(req.body, null, 2));
-    console.log("Email received:", req.body.email);
-    console.log(
-      "Password received:",
-      req.body.password
-        ? "YES (length: " + req.body.password.length + ")"
-        : "NO"
-    );
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.log(
-        " Validation errors:",
+        "Validation errors:",
         JSON.stringify(errors.array(), null, 2)
       );
       return res.status(400).json({
@@ -90,7 +84,7 @@ const login = async (req, res) => {
     console.log(email);
 
     const user = await User.findByEmail(email);
-    console.log(" Database query completed");
+    console.log("Database query completed");
     console.log(user ? "YES" : "NO");
 
     if (!user) {
@@ -105,23 +99,13 @@ const login = async (req, res) => {
     console.log("User found in database:");
     console.log("  - ID:", user.id);
     console.log("  - Email:", user.email);
-    console.log("  - Name:", user.name);
     console.log("  - Role:", user.role);
-    console.log("  - Has password:", !!user.password);
-    console.log(
-      "  - Password hash:",
-      user.password ? user.password.substring(0, 20) + "..." : "NULL"
-    );
-
-    console.log(" Comparing passwords...");
-    console.log("  - Input password:", password);
-    console.log("  - Stored hash:", user.password);
 
     const isPasswordValid = await comparePassword(password, user.password);
-    console.log(" Password comparison result:", isPasswordValid);
+    console.log("Password comparison result:", isPasswordValid);
 
     if (!isPasswordValid) {
-      console.log(" PASSWORD INVALID - comparison returned false");
+      console.log("PASSWORD INVALID");
       console.log("========================================");
       return res.status(401).json({
         success: false,
@@ -129,13 +113,13 @@ const login = async (req, res) => {
       });
     }
 
-    console.log(" PASSWORD VALID - generating token...");
+    console.log("PASSWORD VALID - generating token...");
     const token = generateToken(user.id);
-    console.log(" Token generated successfully");
+    console.log("Token generated successfully");
 
     const { password: _, ...userWithoutPassword } = user;
 
-    console.log(" LOGIN SUCCESSFUL for user:", email);
+    console.log("LOGIN SUCCESSFUL for user:", email);
     console.log("========================================");
 
     res.status(200).json({
@@ -147,7 +131,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" LOGIN ERROR:", error);
+    console.error("LOGIN ERROR:", error);
     console.error("Error stack:", error.stack);
     console.log("========================================");
     res.status(500).json({
@@ -158,7 +142,7 @@ const login = async (req, res) => {
   }
 };
 
-const getMe = async (req, res) => {
+export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -185,7 +169,7 @@ const getMe = async (req, res) => {
   }
 };
 
-const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -221,7 +205,6 @@ const updateProfile = async (req, res) => {
       name,
       email,
       phone,
-
       address,
       avatar,
     });
@@ -242,10 +225,4 @@ const updateProfile = async (req, res) => {
     });
   }
 };
-
-module.exports = {
-  register,
-  login,
-  getMe,
-  updateProfile,
-};
+EOF;

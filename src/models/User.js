@@ -1,4 +1,5 @@
-const pool = require("../config/db");
+cat > (src / models / User.js) << "EOF";
+import pool from "../config/db.js";
 
 class User {
   static async create({ email, password, name, role = "user" }) {
@@ -41,7 +42,6 @@ class User {
       fields.push(`phone = $${paramCount++}`);
       values.push(userData.phone);
     }
-
     if (userData.address !== undefined) {
       fields.push(`address = $${paramCount++}`);
       values.push(userData.address);
@@ -59,7 +59,7 @@ class User {
       UPDATE users 
       SET ${fields.join(", ")}
       WHERE id = $${paramCount}
-      RETURNING id, email, name, role, phone,  address, avatar, created_at, updated_at
+      RETURNING id, email, name, role, phone, address, avatar, created_at, updated_at
     `;
 
     const result = await pool.query(query, values);
@@ -67,4 +67,5 @@ class User {
   }
 }
 
-module.exports = User;
+export default User;
+EOF;
