@@ -1,4 +1,3 @@
-cat > (src / controllers / authController.js) << "EOF";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
 import User from "../models/User.js";
@@ -225,4 +224,3 @@ export const updateProfile = async (req, res) => {
     });
   }
 };
-EOF;
