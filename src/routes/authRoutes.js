@@ -1,4 +1,3 @@
-cat > (src / routes / authRoutes.js) << "EOF";
 import express from "express";
 import { body } from "express-validator";
 import {
