@@ -1,12 +1,15 @@
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
-const express = require("express");
-const cors = require("cors");
-const authRoutes = require("./routes/authRoutes");
-const { createTables } = require("./database/schema");
-const { addAvatarColumn } = require("./database/migrate");
-const { addProfileFields } = require("./database/addProfileFields");
-app.use("/api/doctors", doctorRoutes);
+import { createTables } from "./database/schema.js";
+import { addAvatarColumn } from "./database/migrate.js";
+import { addProfileFields } from "./database/addProfileFields.js";
+import pool from "./config/db.js";
+
 const app = express();
 
 const allowedOrigins = [
@@ -33,6 +36,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/doctors", doctorRoutes);
 
 app.get("/health", (req, res) => {
   res.json({
@@ -72,7 +76,6 @@ const HOST = "0.0.0.0";
 
 const startServer = async () => {
   try {
-    const pool = require("./config/db");
     await pool.query("SELECT NOW()");
     console.log("✓ Database connection successful");
 
@@ -93,4 +96,4 @@ const startServer = async () => {
 
 startServer();
 
-module.exports = app;
+export default app;
