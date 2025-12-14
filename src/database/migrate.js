@@ -1,19 +1,24 @@
-const pool = require("../config/db");
+import pool from "../config/db.js";
 
-const addAvatarColumn = async () => {
+export const addAvatarColumn = async () => {
   try {
-    console.log("Adding avatar column to users table...");
-
-    await pool.query(`
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS avatar TEXT
+    const checkColumn = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      AND column_name = 'avatar'
     `);
 
-    console.log("✓ Avatar column added successfully");
+    if (checkColumn.rows.length === 0) {
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN avatar TEXT
+      `);
+      console.log("Avatar column added to users table");
+    } else {
+      console.log(" Avatar column already exists");
+    }
   } catch (error) {
-    console.error("✗ Error adding avatar column:", error);
-    throw error;
+    console.error(" Error adding avatar column:", error.message);
   }
 };
-
-module.exports = { addAvatarColumn };

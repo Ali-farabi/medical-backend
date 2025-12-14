@@ -1,46 +1,35 @@
-const pool = require("../config/db");
+import pool from "../config/db.js";
 
-const addProfileFields = async () => {
+export const addProfileFields = async () => {
   try {
-    console.log("Adding profile fields to users table...");
+    const columns = [
+      { name: "phone", type: "VARCHAR(20)" },
+      { name: "date_of_birth", type: "DATE" },
+      { name: "address", type: "TEXT" },
+    ];
 
-    // Добавляем колонки, если их нет
-    await pool.query(`
-      DO $$ 
-      BEGIN
-        -- Добавляем phone
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = 'phone'
-        ) THEN
-          ALTER TABLE users ADD COLUMN phone VARCHAR(20);
-        END IF;
+    for (const column of columns) {
+      const checkColumn = await pool.query(
+        `
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        AND column_name = $1
+      `,
+        [column.name]
+      );
 
-        
-
-        -- Добавляем address
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = 'address'
-        ) THEN
-          ALTER TABLE users ADD COLUMN address TEXT;
-        END IF;
-
-        -- Добавляем updated_at если его нет
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = 'updated_at'
-        ) THEN
-          ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-        END IF;
-      END $$;
-    `);
-
-    console.log("✓ Profile fields added successfully");
+      if (checkColumn.rows.length === 0) {
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN ${column.name} ${column.type}
+        `);
+        console.log(`${column.name} column added to users table`);
+      } else {
+        console.log(` ${column.name} column already exists`);
+      }
+    }
   } catch (error) {
-    console.error("✗ Error adding profile fields:", error);
-    throw error;
+    console.error(" Error adding profile fields:", error.message);
   }
 };
-
-module.exports = { addProfileFields };

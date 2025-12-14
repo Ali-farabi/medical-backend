@@ -1,9 +1,7 @@
-const pool = require("../config/db");
+import pool from "../config/db.js";
 
-const createTables = async () => {
+export const createTables = async () => {
   try {
-    console.log("Creating database tables...");
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -11,24 +9,17 @@ const createTables = async () => {
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
         role VARCHAR(50) DEFAULT 'user',
-        phone VARCHAR(20),
-        
-        address TEXT,
-        avatar TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
-    `);
+    console.log(" Users table ready");
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS appointments (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        doctor_name VARCHAR(255) NOT NULL,
+        doctor_id INTEGER,
         appointment_date TIMESTAMP NOT NULL,
         status VARCHAR(50) DEFAULT 'pending',
         notes TEXT,
@@ -36,12 +27,9 @@ const createTables = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    console.log("✓ Database tables created successfully");
+    console.log(" Appointments table ready");
   } catch (error) {
-    console.error("✗ Error creating tables:", error);
+    console.error(" Error creating tables:", error);
     throw error;
   }
 };
-
-module.exports = { createTables };
