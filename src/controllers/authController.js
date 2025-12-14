@@ -62,8 +62,23 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
+    console.log("========================================");
+    console.log("login ");
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
+    console.log("Email received:", req.body.email);
+    console.log(
+      "Password received:",
+      req.body.password
+        ? "YES (length: " + req.body.password.length + ")"
+        : "NO"
+    );
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log(
+        " Validation errors:",
+        JSON.stringify(errors.array(), null, 2)
+      );
       return res.status(400).json({
         success: false,
         message: "Ошибка валидации",
@@ -72,25 +87,56 @@ const login = async (req, res) => {
     }
 
     const { email, password } = req.body;
+    console.log(email);
 
     const user = await User.findByEmail(email);
+    console.log(" Database query completed");
+    console.log(user ? "YES" : "NO");
+
     if (!user) {
+      console.log("not found:", email);
+      console.log("========================================");
       return res.status(401).json({
         success: false,
         message: "Неверный email или пароль",
       });
     }
+
+    console.log("User found in database:");
+    console.log("  - ID:", user.id);
+    console.log("  - Email:", user.email);
+    console.log("  - Name:", user.name);
+    console.log("  - Role:", user.role);
+    console.log("  - Has password:", !!user.password);
+    console.log(
+      "  - Password hash:",
+      user.password ? user.password.substring(0, 20) + "..." : "NULL"
+    );
+
+    console.log(" Comparing passwords...");
+    console.log("  - Input password:", password);
+    console.log("  - Stored hash:", user.password);
 
     const isPasswordValid = await comparePassword(password, user.password);
+    console.log(" Password comparison result:", isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log(" PASSWORD INVALID - comparison returned false");
+      console.log("========================================");
       return res.status(401).json({
         success: false,
         message: "Неверный email или пароль",
       });
     }
 
+    console.log(" PASSWORD VALID - generating token...");
     const token = generateToken(user.id);
+    console.log(" Token generated successfully");
+
     const { password: _, ...userWithoutPassword } = user;
+
+    console.log(" LOGIN SUCCESSFUL for user:", email);
+    console.log("========================================");
 
     res.status(200).json({
       success: true,
@@ -101,7 +147,9 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error(" LOGIN ERROR:", error);
+    console.error("Error stack:", error.stack);
+    console.log("========================================");
     res.status(500).json({
       success: false,
       message: "Ошибка сервера при авторизации",

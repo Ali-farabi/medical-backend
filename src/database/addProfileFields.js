@@ -16,13 +16,7 @@ const addProfileFields = async () => {
           ALTER TABLE users ADD COLUMN phone VARCHAR(20);
         END IF;
 
-        -- Добавляем date_of_birth
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = 'date_of_birth'
-        ) THEN
-          ALTER TABLE users ADD COLUMN date_of_birth DATE;
-        END IF;
+        
 
         -- Добавляем address
         IF NOT EXISTS (

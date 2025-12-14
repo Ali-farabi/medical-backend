@@ -12,7 +12,7 @@ const createTables = async () => {
         name VARCHAR(255) NOT NULL,
         role VARCHAR(50) DEFAULT 'user',
         phone VARCHAR(20),
-        date_of_birth DATE,
+        
         address TEXT,
         avatar TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
