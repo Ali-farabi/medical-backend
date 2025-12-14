@@ -1,6 +1,7 @@
 {
   "name": "medical-appointment-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend for medical appointment system",
   "main": "src/server.js",
   "scripts": {
