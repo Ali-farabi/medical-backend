@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
+import specialtyRoutes from "./routes/specialtyRoutes.js";
 import { createTables } from "./database/schema.js";
 import { addAvatarColumn } from "./database/migrate.js";
 import { addProfileFields } from "./database/addProfileFields.js";
@@ -37,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
+app.use("/api/specialties", specialtyRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

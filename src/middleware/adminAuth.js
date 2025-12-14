@@ -1,17 +1,27 @@
-export const isAdmin = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({
+const adminAuth = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Admin auth error:", error);
+    res.status(500).json({
       success: false,
-      message: "Необходима авторизация",
+      message: "Server error during authorization",
     });
   }
-
-  if (req.user.role !== "admin") {
-    return res.status(403).json({
-      success: false,
-      message: "Доступ запрещен. Требуются права администратора.",
-    });
-  }
-
-  next();
 };
+
+export default adminAuth;

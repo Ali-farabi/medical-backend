@@ -14,7 +14,7 @@ async function createDoctorsTables() {
       );
     `);
 
-    console.log("Specialties table created");
+    console.log(" Specialties table created");
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS doctors (
@@ -40,14 +40,14 @@ async function createDoctorsTables() {
     await pool.query(`
       INSERT INTO specialties (name, description, icon) 
       VALUES 
-        ('Cardiology', 'Heart and cardiovascular system', '❤️'),
-        ('Neurology', 'Brain and nervous system', '🧠'),
-        ('Pediatrics', 'Children health', '👶'),
-        ('Orthopedics', 'Bones and joints', '🦴'),
-        ('Dermatology', 'Skin conditions', '🧴'),
-        ('Ophthalmology', 'Eye care', '👁️'),
-        ('Dentistry', 'Dental care', '🦷'),
-        ('General Practice', 'General health', '🏥')
+        ('Cardiology', 'Heart and cardiovascular system', ''),
+        ('Neurology', 'Brain and nervous system', ''),
+        ('Pediatrics', 'Children health', ''),
+        ('Orthopedics', 'Bones and joints', ''),
+        ('Dermatology', 'Skin conditions', ''),
+        ('Ophthalmology', 'Eye care', ''),
+        ('Dentistry', 'Dental care', ''),
+        ('General Practice', 'General health', '')
       ON CONFLICT (name) DO NOTHING;
     `);
 
@@ -57,7 +57,7 @@ async function createDoctorsTables() {
       INSERT INTO doctors (name, email, phone, specialty_id, experience_years, education, description, consultation_price, rating, reviews_count, photo)
       SELECT 
         'Dr. ' || names.name,
-        lower(names.name) || '@hospital.com',
+        lower(replace(names.name, ' ', '.')) || '@hospital.com',
         '+7 7' || LPAD((RANDOM() * 999999999)::INTEGER::TEXT, 9, '0'),
         (SELECT id FROM specialties ORDER BY RANDOM() LIMIT 1),
         (RANDOM() * 20 + 3)::INTEGER,
@@ -74,15 +74,17 @@ async function createDoctorsTables() {
           ('Alexander Popov'), ('Olga Fedorova'), ('Mikhail Smirnov'),
           ('Natalia Morozova')
       ) AS names(name)
-      ON CONFLICT DO NOTHING;
+      WHERE NOT EXISTS (SELECT 1 FROM doctors LIMIT 1);
     `);
 
     console.log(" Sample doctors inserted");
     console.log(" All tables created successfully!");
 
+    await pool.end();
     process.exit(0);
   } catch (error) {
     console.error(" Error creating tables:", error);
+    await pool.end();
     process.exit(1);
   }
 }

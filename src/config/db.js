@@ -1,4 +1,5 @@
-const { Pool } = require("pg");
+import pkg from "pg";
+const { Pool } = pkg;
 
 console.log("=== DB Config Debug ===");
 console.log("DB_HOST:", process.env.DB_HOST);
@@ -35,4 +36,4 @@ try {
   throw error;
 }
 
-module.exports = pool;
+export default pool;
