@@ -38,4 +38,3 @@ router.get("/me", authenticate, getMe);
 router.put("/me", authenticate, updateProfileValidation, updateProfile);
 
 export default router;
-EOF;
