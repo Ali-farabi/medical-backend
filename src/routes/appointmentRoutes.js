@@ -1,6 +1,6 @@
 import express from "express";
 import pool from "../config/db.js";
-import { authenticate } from "../middleware/authenticate.js";
+import authenticate from "../middleware/authenticate.js";
 
 const router = express.Router();
 
@@ -9,24 +9,25 @@ router.get("/available-slots/:doctorId", async (req, res) => {
     const { doctorId } = req.params;
     const { date } = req.query;
 
-    const [doctor] = await pool.query("SELECT id FROM doctors WHERE id = ?", [
-      doctorId,
-    ]);
+    const doctorResult = await pool.query(
+      "SELECT id FROM doctors WHERE id = $1",
+      [doctorId]
+    );
 
-    if (doctor.length === 0) {
+    if (doctorResult.rows.length === 0) {
       return res.status(404).json({ message: "Врач не найден" });
     }
 
-    const [appointments] = await pool.query(
+    const appointmentsResult = await pool.query(
       `SELECT appointment_time 
        FROM appointments 
-       WHERE doctor_id = ? 
-       AND DATE(appointment_date) = ? 
+       WHERE doctor_id = $1 
+       AND DATE(appointment_date) = $2 
        AND status != 'cancelled'`,
       [doctorId, date]
     );
 
-    const bookedSlots = appointments.map((a) => a.appointment_time);
+    const bookedSlots = appointmentsResult.rows.map((a) => a.appointment_time);
 
     const allSlots = [];
     for (let hour = 8; hour <= 20; hour++) {
@@ -65,52 +66,54 @@ router.post("/book", authenticate, async (req, res) => {
         .json({ message: "Только пациенты могут записываться на прием" });
     }
 
-    const [doctor] = await pool.query(
-      "SELECT id, consultation_price FROM doctors WHERE id = ?",
+    const doctorResult = await pool.query(
+      "SELECT id, consultation_price FROM doctors WHERE id = $1",
       [doctor_id]
     );
 
-    if (doctor.length === 0) {
+    if (doctorResult.rows.length === 0) {
       return res.status(404).json({ message: "Врач не найден" });
     }
 
-    const [existingAppointment] = await pool.query(
+    const existingResult = await pool.query(
       `SELECT id FROM appointments 
-       WHERE doctor_id = ? 
-       AND appointment_date = ? 
-       AND appointment_time = ? 
+       WHERE doctor_id = $1 
+       AND appointment_date = $2 
+       AND appointment_time = $3 
        AND status != 'cancelled'`,
       [doctor_id, appointment_date, appointment_time]
     );
 
-    if (existingAppointment.length > 0) {
+    if (existingResult.rows.length > 0) {
       return res.status(400).json({ message: "Это время уже занято" });
     }
 
-    const [result] = await pool.query(
+    const insertResult = await pool.query(
       `INSERT INTO appointments 
        (patient_id, doctor_id, appointment_date, appointment_time, status) 
-       VALUES (?, ?, ?, ?, 'scheduled')`,
+       VALUES ($1, $2, $3, $4, 'scheduled')
+       RETURNING *`,
       [patient_id, doctor_id, appointment_date, appointment_time]
     );
 
-    const [appointment] = await pool.query(
+    const appointmentResult = await pool.query(
       `SELECT 
         a.*,
         d.name as doctor_name,
-        d.specialty_name,
+        s.name as specialty_name,
         d.consultation_price,
         u.full_name as patient_name
        FROM appointments a
        JOIN doctors d ON a.doctor_id = d.id
+       LEFT JOIN specialties s ON d.specialty_id = s.id
        JOIN users u ON a.patient_id = u.id
-       WHERE a.id = ?`,
-      [result.insertId]
+       WHERE a.id = $1`,
+      [insertResult.rows[0].id]
     );
 
     res.status(201).json({
       message: "Запись успешно создана",
-      appointment: appointment[0],
+      appointment: appointmentResult.rows[0],
     });
   } catch (error) {
     console.error("Error creating appointment:", error);
@@ -122,20 +125,21 @@ router.get("/my-appointments", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const [appointments] = await pool.query(
+    const result = await pool.query(
       `SELECT 
         a.*,
         d.name as doctor_name,
-        d.specialty_name,
+        s.name as specialty_name,
         d.consultation_price
        FROM appointments a
        JOIN doctors d ON a.doctor_id = d.id
-       WHERE a.patient_id = ?
+       LEFT JOIN specialties s ON d.specialty_id = s.id
+       WHERE a.patient_id = $1
        ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
       [userId]
     );
 
-    res.json(appointments);
+    res.json(result.rows);
   } catch (error) {
     console.error("Error fetching appointments:", error);
     res.status(500).json({ message: "Ошибка сервера", error: error.message });
@@ -147,20 +151,20 @@ router.patch("/:appointmentId/cancel", authenticate, async (req, res) => {
     const { appointmentId } = req.params;
     const userId = req.user.id;
 
-    const [appointment] = await pool.query(
-      "SELECT * FROM appointments WHERE id = ? AND patient_id = ?",
+    const appointmentResult = await pool.query(
+      "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2",
       [appointmentId, userId]
     );
 
-    if (appointment.length === 0) {
+    if (appointmentResult.rows.length === 0) {
       return res.status(404).json({ message: "Запись не найдена" });
     }
 
-    if (appointment[0].status === "cancelled") {
+    if (appointmentResult.rows[0].status === "cancelled") {
       return res.status(400).json({ message: "Запись уже отменена" });
     }
 
-    await pool.query("UPDATE appointments SET status = ? WHERE id = ?", [
+    await pool.query("UPDATE appointments SET status = $1 WHERE id = $2", [
       "cancelled",
       appointmentId,
     ]);
@@ -168,6 +172,33 @@ router.patch("/:appointmentId/cancel", authenticate, async (req, res) => {
     res.json({ message: "Запись успешно отменена" });
   } catch (error) {
     console.error("Error cancelling appointment:", error);
+    res.status(500).json({ message: "Ошибка сервера", error: error.message });
+  }
+});
+
+router.get("/", authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Доступ запрещен" });
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        a.*,
+        d.name as doctor_name,
+        s.name as specialty_name,
+        u.full_name as patient_name,
+        u.email as patient_email
+       FROM appointments a
+       JOIN doctors d ON a.doctor_id = d.id
+       LEFT JOIN specialties s ON d.specialty_id = s.id
+       JOIN users u ON a.patient_id = u.id
+       ORDER BY a.appointment_date DESC, a.appointment_time DESC`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching all appointments:", error);
     res.status(500).json({ message: "Ошибка сервера", error: error.message });
   }
 });
