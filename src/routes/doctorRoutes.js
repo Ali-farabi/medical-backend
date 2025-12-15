@@ -5,7 +5,6 @@ import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
-// GET all doctors (public)
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -14,7 +13,7 @@ router.get("/", async (req, res) => {
         s.name as specialty_name
       FROM doctors d
       LEFT JOIN specialties s ON d.specialty_id = s.id
-      ORDER BY d.created_at DESC
+      ORDER BY d.name
     `);
 
     res.json(result.rows);
@@ -22,13 +21,12 @@ router.get("/", async (req, res) => {
     console.error("Error fetching doctors:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch doctors",
+      message: "Server error",
       error: error.message,
     });
   }
 });
 
-// GET single doctor by ID (public)
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,7 +46,7 @@ router.get("/:id", async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Doctor not found",
+        message: "Врач не найден",
       });
     }
 
@@ -57,7 +55,7 @@ router.get("/:id", async (req, res) => {
     console.error("Error fetching doctor:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch doctor",
+      message: "Server error",
       error: error.message,
     });
   }
@@ -77,7 +75,6 @@ router.post("/", authenticate, adminAuth, async (req, res) => {
       photo,
     } = req.body;
 
-    // Validation
     if (!name || !specialty_id) {
       return res.status(400).json({
         success: false,

@@ -6,10 +6,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import specialtyRoutes from "./routes/specialtyRoutes.js";
-import { createTables } from "./database/schema.js";
-import { addAvatarColumn } from "./database/migrate.js";
-import { addProfileFields } from "./database/addProfileFields.js";
-import pool from "./config/db.js";
+import appointmentRoutes from "./routes/appointmentRoutes.js";
 
 const app = express();
 
@@ -39,63 +36,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/specialties", specialtyRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
 app.get("/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "Server is running",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-  });
+  res.json({ status: "ok", message: "Server is running" });
 });
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Medical Appointment API",
-    version: "1.0.0",
-  });
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(` Server running on port ${PORT}`);
 });
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-  });
-});
-
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: "Something went wrong!",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
-  });
-});
-
-const PORT = process.env.PORT || 8000;
-const HOST = "0.0.0.0";
-
-const startServer = async () => {
-  try {
-    await pool.query("SELECT NOW()");
-    console.log("✓ Database connection successful");
-
-    await createTables();
-    await addAvatarColumn();
-    await addProfileFields();
-
-    app.listen(PORT, HOST, () => {
-      console.log(`✓ Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
-};
-
-startServer();
-
-export default app;
+module.exports = app;
