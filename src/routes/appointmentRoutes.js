@@ -92,11 +92,19 @@ router.get("/available-slots/:doctorId", async (req, res) => {
 
 router.post("/book", authenticate, async (req, res) => {
   try {
-    const { doctor_id, appointment_date, appointment_time } = req.body;
-    const patient_id = req.user.id;
+    const {
+      doctor_id,
+      appointment_date,
+      appointment_time,
+      complaints,
+      chronic_diseases,
+      height,
+      weight,
+    } = req.body;
+    const user_id = req.user.id;
 
     console.log("Booking request:", {
-      patient_id,
+      user_id,
       doctor_id,
       appointment_date,
       appointment_time,
@@ -108,9 +116,9 @@ router.post("/book", authenticate, async (req, res) => {
         .json({ message: "Только пациенты могут записываться на прием" });
     }
 
-    if (!doctor_id || !appointment_date || !appointment_time) {
+    if (!doctor_id || !appointment_date || !appointment_time || !complaints) {
       return res.status(400).json({
-        message: "Необходимо указать врача, дату и время приема",
+        message: "Необходимо указать врача, дату, время приема и жалобы",
       });
     }
 
@@ -138,10 +146,19 @@ router.post("/book", authenticate, async (req, res) => {
 
     const insertResult = await pool.query(
       `INSERT INTO appointments 
-       (patient_id, doctor_id, appointment_date, appointment_time, status) 
-       VALUES ($1, $2, $3, $4, 'scheduled')
+       (user_id, doctor_id, appointment_date, appointment_time, complaints, chronic_diseases, height, weight, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
        RETURNING *`,
-      [patient_id, doctor_id, appointment_date, appointment_time]
+      [
+        user_id,
+        doctor_id,
+        appointment_date,
+        appointment_time,
+        complaints,
+        chronic_diseases,
+        height,
+        weight,
+      ]
     );
 
     console.log("Appointment created:", insertResult.rows[0]);
@@ -152,11 +169,11 @@ router.post("/book", authenticate, async (req, res) => {
         d.name as doctor_name,
         s.name as specialty_name,
         d.consultation_price,
-        u.full_name as patient_name
+        u.name as patient_name
        FROM appointments a
        JOIN doctors d ON a.doctor_id = d.id
        LEFT JOIN specialties s ON d.specialty_id = s.id
-       JOIN users u ON a.patient_id = u.id
+       JOIN users u ON a.user_id = u.id
        WHERE a.id = $1`,
       [insertResult.rows[0].id]
     );
@@ -188,11 +205,12 @@ router.get("/my-appointments", authenticate, async (req, res) => {
         a.*,
         d.name as doctor_name,
         s.name as specialty_name,
-        d.consultation_price
+        d.consultation_price,
+        d.photo as doctor_photo
        FROM appointments a
        JOIN doctors d ON a.doctor_id = d.id
        LEFT JOIN specialties s ON d.specialty_id = s.id
-       WHERE a.patient_id = $1
+       WHERE a.user_id = $1
        ORDER BY a.appointment_date DESC, a.appointment_time DESC`,
       [userId]
     );
@@ -210,7 +228,7 @@ router.patch("/:appointmentId/cancel", authenticate, async (req, res) => {
     const userId = req.user.id;
 
     const appointmentResult = await pool.query(
-      "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2",
+      "SELECT * FROM appointments WHERE id = $1 AND user_id = $2",
       [appointmentId, userId]
     );
 
@@ -245,12 +263,12 @@ router.get("/", authenticate, async (req, res) => {
         a.*,
         d.name as doctor_name,
         s.name as specialty_name,
-        u.full_name as patient_name,
+        u.name as patient_name,
         u.email as patient_email
        FROM appointments a
        JOIN doctors d ON a.doctor_id = d.id
        LEFT JOIN specialties s ON d.specialty_id = s.id
-       JOIN users u ON a.patient_id = u.id
+       JOIN users u ON a.user_id = u.id
        ORDER BY a.appointment_date DESC, a.appointment_time DESC`
     );
 
