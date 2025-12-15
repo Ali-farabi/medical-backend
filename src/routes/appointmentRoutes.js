@@ -9,6 +9,14 @@ router.get("/available-slots/:doctorId", async (req, res) => {
     const { doctorId } = req.params;
     const { date } = req.query;
 
+    console.log(`Fetching slots for doctor ${doctorId} on date ${date}`);
+
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({
+        message: "Неверный формат даты. Используйте YYYY-MM-DD",
+      });
+    }
+
     const doctorResult = await pool.query(
       "SELECT id FROM doctors WHERE id = $1",
       [doctorId]
@@ -22,12 +30,26 @@ router.get("/available-slots/:doctorId", async (req, res) => {
       `SELECT appointment_time 
        FROM appointments 
        WHERE doctor_id = $1 
-       AND DATE(appointment_date) = $2 
+       AND appointment_date = $2 
        AND status != 'cancelled'`,
       [doctorId, date]
     );
 
-    const bookedSlots = appointmentsResult.rows.map((a) => a.appointment_time);
+    console.log(`Found ${appointmentsResult.rows.length} booked appointments`);
+
+    const bookedSlots = appointmentsResult.rows.map((a) => {
+      const time = a.appointment_time;
+      if (typeof time === "string") {
+        const parts = time.split(":");
+        if (parts.length === 2) {
+          return `${parts[0]}:${parts[1]}:00`;
+        }
+        return time.slice(0, 8);
+      }
+      return time;
+    });
+
+    console.log("Booked slots:", bookedSlots);
 
     const allSlots = [];
     for (let hour = 8; hour <= 20; hour++) {
@@ -40,18 +62,31 @@ router.get("/available-slots/:doctorId", async (req, res) => {
       }
     }
 
+    console.log(`Generated ${allSlots.length} total slots`);
+
     const availableSlots = allSlots.filter(
       (slot) => !bookedSlots.includes(slot)
     );
+
+    console.log(`${availableSlots.length} slots available`);
 
     res.json({
       date,
       availableSlots,
       bookedSlots,
+      totalSlots: allSlots.length,
     });
   } catch (error) {
     console.error("Error fetching available slots:", error);
-    res.status(500).json({ message: "Ошибка сервера", error: error.message });
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
+    res.status(500).json({
+      message: "Ошибка сервера при загрузке слотов",
+      error: error.message,
+    });
   }
 });
 
@@ -60,10 +95,23 @@ router.post("/book", authenticate, async (req, res) => {
     const { doctor_id, appointment_date, appointment_time } = req.body;
     const patient_id = req.user.id;
 
+    console.log("Booking request:", {
+      patient_id,
+      doctor_id,
+      appointment_date,
+      appointment_time,
+    });
+
     if (req.user.role !== "user") {
       return res
         .status(403)
         .json({ message: "Только пациенты могут записываться на прием" });
+    }
+
+    if (!doctor_id || !appointment_date || !appointment_time) {
+      return res.status(400).json({
+        message: "Необходимо указать врача, дату и время приема",
+      });
     }
 
     const doctorResult = await pool.query(
@@ -96,6 +144,8 @@ router.post("/book", authenticate, async (req, res) => {
       [patient_id, doctor_id, appointment_date, appointment_time]
     );
 
+    console.log("Appointment created:", insertResult.rows[0]);
+
     const appointmentResult = await pool.query(
       `SELECT 
         a.*,
@@ -117,7 +167,15 @@ router.post("/book", authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating appointment:", error);
-    res.status(500).json({ message: "Ошибка сервера", error: error.message });
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
+    res.status(500).json({
+      message: "Ошибка сервера при создании записи",
+      error: error.message,
+    });
   }
 });
 
