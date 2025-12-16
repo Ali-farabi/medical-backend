@@ -1,8 +1,8 @@
-import pool from "./config/db.js";
+import pool from "../config/db.js";
 
 async function fixAppointmentsTable() {
   try {
-    console.log("=== Checking appointments table ===");
+    console.log("=== Starting Appointments Table Fix ===\n");
 
     const tableCheck = await pool.query(`
       SELECT EXISTS (
@@ -12,7 +12,7 @@ async function fixAppointmentsTable() {
     `);
 
     if (tableCheck.rows[0].exists) {
-      console.log("✓ Appointments table exists");
+      console.log("✓ Appointments table exists - checking structure...\n");
 
       const columnsCheck = await pool.query(`
         SELECT column_name, data_type
@@ -21,7 +21,7 @@ async function fixAppointmentsTable() {
         ORDER BY ordinal_position;
       `);
 
-      console.log("\nCurrent columns:");
+      console.log("Current columns:");
       columnsCheck.rows.forEach((col) => {
         console.log(`  - ${col.column_name}: ${col.data_type}`);
       });
@@ -30,24 +30,22 @@ async function fixAppointmentsTable() {
         (col) => col.column_name === "appointment_time"
       );
 
-      if (!hasAppointmentTime) {
-        console.log(
-          "\n  appointment_time column missing! Dropping and recreating table..."
-        );
-        await pool.query("DROP TABLE IF EXISTS appointments CASCADE;");
-        console.log("✓ Dropped old appointments table");
-      } else {
-        console.log("\n✓ appointment_time column exists");
-        console.log("Table structure looks correct!");
+      if (hasAppointmentTime) {
+        console.log("\n✓ Table structure is correct! No changes needed.\n");
         await pool.end();
-        process.exit(0);
         return;
       }
+
+      console.log("\n⚠ appointment_time column is missing!");
+      console.log("⚠ Dropping and recreating table...\n");
+
+      await pool.query("DROP TABLE IF EXISTS appointments CASCADE;");
+      console.log("✓ Dropped old appointments table\n");
     } else {
-      console.log("  Appointments table does not exist. Creating...");
+      console.log("⚠ Appointments table does not exist. Creating new one...\n");
     }
 
-    console.log("\n=== Creating appointments table ===");
+    console.log("Creating appointments table with correct structure...");
 
     await pool.query(`
       CREATE TABLE appointments (
@@ -66,9 +64,9 @@ async function fixAppointmentsTable() {
       );
     `);
 
-    console.log("✓ Table created successfully");
+    console.log("✓ Table created successfully\n");
 
-    console.log("\n=== Creating indexes ===");
+    console.log("Creating indexes...");
 
     await pool.query(`
       CREATE INDEX idx_patient_appointments 
@@ -80,9 +78,9 @@ async function fixAppointmentsTable() {
       CREATE INDEX idx_doctor_appointments 
       ON appointments(doctor_id, appointment_date);
     `);
-    console.log("✓ Created index: idx_doctor_appointments");
+    console.log("✓ Created index: idx_doctor_appointments\n");
 
-    console.log("\n=== Creating trigger function ===");
+    console.log("Creating trigger function and trigger...");
 
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -105,41 +103,45 @@ async function fixAppointmentsTable() {
       FOR EACH ROW
       EXECUTE FUNCTION update_updated_at_column();
     `);
-    console.log("✓ Trigger created");
+    console.log("✓ Trigger created\n");
 
-    console.log("\n=== Verifying table structure ===");
+    console.log("=== Verifying Final Structure ===\n");
 
-    const verifyColumns = await pool.query(`
+    const finalColumns = await pool.query(`
       SELECT column_name, data_type, is_nullable
       FROM information_schema.columns
       WHERE table_name = 'appointments'
       ORDER BY ordinal_position;
     `);
 
-    console.log("\nFinal table structure:");
-    verifyColumns.rows.forEach((col) => {
+    console.log("Final table structure:");
+    finalColumns.rows.forEach((col) => {
       console.log(
         `  - ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`
       );
     });
 
-    console.log("\n=== Would you like to add sample appointments? ===");
-    console.log(
-      "You can manually add appointments through the booking interface"
-    );
-
-    console.log("\n Migration completed successfully!");
+    console.log("\n Migration completed successfully!\n");
+    console.log("Your appointments table is now ready to use.");
+    console.log("Users can book appointments through the application.\n");
   } catch (error) {
     console.error("\n Error during migration:");
     console.error("Message:", error.message);
     console.error("Code:", error.code);
-    console.error("Detail:", error.detail);
-    console.error("Stack:", error.stack);
+    if (error.detail) console.error("Detail:", error.detail);
+    console.error("\nFull error:", error);
     throw error;
   } finally {
     await pool.end();
-    process.exit(0);
   }
 }
 
-fixAppointmentsTable();
+fixAppointmentsTable()
+  .then(() => {
+    console.log("Process completed.");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Migration failed:", error.message);
+    process.exit(1);
+  });
