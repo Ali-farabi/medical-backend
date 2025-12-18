@@ -7,7 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import specialtyRoutes from "./routes/specialtyRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
-
+import { swaggerUi, swaggerSpec } from "./config/swagger.js";
 const app = express();
 
 const allowedOrigins = [
@@ -41,7 +41,16 @@ app.use("/api/appointments", appointmentRoutes);
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Server is running" });
 });
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "Care+ API Documentation",
+  })
+);
 
+console.log(" API Documentation: http://localhost:5000/api-docs");
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

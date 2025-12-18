@@ -5,8 +5,12 @@ import {
   login,
   getMe,
   updateProfile,
+  getAllUsers,
+  getUserStats,
+  getUserById,
 } from "../controllers/authController.js";
 import authenticate from "../middleware/authenticate.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -34,7 +38,12 @@ const updateProfileValidation = [
 
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
+
 router.get("/me", authenticate, getMe);
 router.put("/me", authenticate, updateProfileValidation, updateProfile);
+
+router.get("/users", authenticate, adminAuth, getAllUsers);
+router.get("/users/stats", authenticate, adminAuth, getUserStats);
+router.get("/users/:id", authenticate, adminAuth, getUserById);
 
 export default router;
