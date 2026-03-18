@@ -8,54 +8,19 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 import specialtyRoutes from "./routes/specialtyRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import { swaggerUi, swaggerSpec } from "./config/swagger.js";
-import pool from "./config/db.js";
 const app = express();
 
-const defaultAllowedOrigins = [
+const allowedOrigins = [
   "https://medical-project-orpin.vercel.app",
   "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:4173",
-  "http://127.0.0.1:4173",
+  "https://food-recipes-eight-ivory.vercel.app",
+  "https://markett-self.vercel.app",
 ];
-
-const allowedOrigins = [
-  ...defaultAllowedOrigins,
-  ...(process.env.ALLOWED_ORIGINS || "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-];
-
-const allowedOriginPatterns = [
-  /\.vercel\.app$/i,
-  /\.onrender\.com$/i,
-  /\.up\.railway\.app$/i,
-  /^localhost$/i,
-  /^127\.0\.0\.1$/i,
-];
-
-const isAllowedOrigin = (origin) => {
-  if (!origin || process.env.ALLOW_ALL_ORIGINS === "true") {
-    return true;
-  }
-
-  if (allowedOrigins.includes(origin)) {
-    return true;
-  }
-
-  try {
-    const { hostname } = new URL(origin);
-    return allowedOriginPatterns.some((pattern) => pattern.test(hostname));
-  } catch {
-    return false;
-  }
-};
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (isAllowedOrigin(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -85,19 +50,8 @@ app.use(
   })
 );
 
+console.log(" API Documentation: http://localhost:5000/api-docs");
 const PORT = process.env.PORT || 5000;
-
-try {
-  await pool.query("SELECT 1");
-  console.log(" Database health check passed");
-} catch (error) {
-  console.error(" Database health check failed:", error.message);
-  process.exit(1);
-}
-
-console.log(
-  ` API Documentation: http://localhost:${process.env.PORT || 5000}/api-docs`
-);
 
 app.listen(PORT, () => {
   console.log(` Server running on port ${PORT}`);

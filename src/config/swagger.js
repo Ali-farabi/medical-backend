@@ -1,8 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 
-const publicApiUrl = process.env.PUBLIC_API_URL || "http://localhost:8000";
-
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -17,11 +15,11 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:8000",
+        url: "http://localhost:5000",
         description: "Development server",
       },
       {
-        url: publicApiUrl,
+        url: "https://medical-backend-54hp.onrender.com",
         description: "Production server",
       },
     ],

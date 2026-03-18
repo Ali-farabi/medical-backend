@@ -220,7 +220,7 @@ router.get("/my-appointments", authenticate, async (req, res) => {
   }
 });
 
-const cancelAppointment = async (req, res) => {
+router.patch("/:appointmentId/cancel", authenticate, async (req, res) => {
   try {
     const { appointmentId } = req.params;
     const userId = req.user.id;
@@ -248,11 +248,7 @@ const cancelAppointment = async (req, res) => {
     console.error("Error cancelling appointment:", error);
     res.status(500).json({ message: "Ошибка сервера", error: error.message });
   }
-};
-
-router.patch("/:appointmentId/cancel", authenticate, cancelAppointment);
-
-router.delete("/:appointmentId", authenticate, cancelAppointment);
+});
 
 router.get("/", authenticate, async (req, res) => {
   try {
